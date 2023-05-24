@@ -1171,3 +1171,24 @@ path = "exercises/conversions/as_ref_mut.rs"
 mode = "test"
 hint = """
 Add AsRef<str> as a trait bound to the functions."""
+
+[[exercises]]
+name = "async1"
+path = "exercises/async/async1.rs"
+mode = "async"
+hint = """
+The function that we need to run is async. You might want to look at
+https://rust-lang.github.io/async-book/01_getting_started/04_async_await_primer.html
+for a primer on using async functions.
+
+The println! can't print out the result of the async function as it returns a Future. Is there a way to wait for the Future to complete?
+
+The result needs to be awaited before it can be printed. You can use the .await syntax to do this.
+
+Using await will cause the main function to become async. What happens if we add the async keyword to the main function?
+
+Remember that we have tokio imported. To start an async function, we need a runtime to run it. 
+
+We can use the #[tokio::main] attribute macro to start the runtime. This will allow us to run async functions in the main function.
+[[exercises]]
+"""
