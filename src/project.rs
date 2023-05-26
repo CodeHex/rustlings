@@ -77,8 +77,18 @@ impl RustAnalyzerProject {
             deps: Vec::new(),
             // This allows rust_analyzer to work inside #[test] blocks
             cfg: vec![
+                "feature=\"fs\"".to_string(),
+                "feature=\"io-util\"".to_string(),
+                "feature=\"io-std\"".to_string(),
+                "feature=\"macros\"".to_string(),
+                "feature=\"net\"".to_string(),
+                "feature=\"parking_lot\"".to_string(),
+                "feature=\"process\"".to_string(),
                 "feature=\"rt\"".to_string(),
-                "feature=\"rt-multi-thread\"".to_string()
+                "feature=\"rt-multi-thread\"".to_string(),
+                "feature=\"signal\"".to_string(),
+                "feature=\"sync\"".to_string(),
+                "feature=\"time\"".to_string(),
             ],
         });
     }
