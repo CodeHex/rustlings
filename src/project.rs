@@ -10,6 +10,9 @@ use std::process::Command;
 #[derive(Serialize, Deserialize)]
 pub struct RustAnalyzerProject {
     sysroot_src: String,
+
+    #[serde(skip)]
+    cargo_tokio: String,
     pub crates: Vec<Crate>,
 }
 
@@ -17,14 +20,22 @@ pub struct RustAnalyzerProject {
 pub struct Crate {
     root_module: String,
     edition: String,
-    deps: Vec<String>,
+    deps: Vec<DepData>,
     cfg: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DepData {
+    #[serde(rename="crate")]
+    crate_index: i32,
+    name: String,
 }
 
 impl RustAnalyzerProject {
     pub fn new() -> RustAnalyzerProject {
         RustAnalyzerProject {
             sysroot_src: String::new(),
+            cargo_tokio: String::new(),
             crates: Vec::new(),
         }
     }
@@ -42,23 +53,41 @@ impl RustAnalyzerProject {
     fn path_to_json(&mut self, path: PathBuf) -> Result<(), Box<dyn Error>> {
         if let Some(ext) = path.extension() {
             if ext == "rs" {
-                self.crates.push(Crate {
+                let mut c = Crate {
                     root_module: path.display().to_string(),
                     edition: "2021".to_string(),
                     deps: Vec::new(),
                     // This allows rust_analyzer to work inside #[test] blocks
                     cfg: vec!["test".to_string()],
-                })
+                };
+                if path.display().to_string().starts_with("exercises/async") {
+                    c.deps = vec!(DepData{ crate_index: 0, name: "tokio".to_string()})
+                }
+                self.crates.push(c);
             }
         }
 
         Ok(())
     }
 
+    fn add_tokio_to_crates(&mut self) {
+        self.crates.push(Crate {
+            root_module: self.cargo_tokio.to_string(),
+            edition: "2021".to_string(),
+            deps: Vec::new(),
+            // This allows rust_analyzer to work inside #[test] blocks
+            cfg: vec![
+                "feature=\"rt\"".to_string(),
+                "feature=\"rt-multi-thread\"".to_string()
+            ],
+        });
+    }
+
     /// Parse the exercises folder for .rs files, any matches will create
     /// a new `crate` in rust-project.json which allows rust-analyzer to
     /// treat it like a normal binary
     pub fn exercises_to_json(&mut self) -> Result<(), Box<dyn Error>> {
+        self.add_tokio_to_crates();
         for path in glob("./exercises/**/*")? {
             self.path_to_json(path?)?;
         }
@@ -96,4 +125,20 @@ impl RustAnalyzerProject {
         .to_string();
         Ok(())
     }
+
+
+    pub fn get_cargo_tokio_path(&mut self) {
+        let home = env::var("HOME").unwrap_or_else(|_| String::from("~/"));
+        self.cargo_tokio = (std::path::Path::new(&home)
+        .join(".cargo")
+        .join("registry")
+        .join("src")
+        .join("github.com-1ecc6299db9ec823")
+        .join("tokio-1.28.1")
+        .join("src")
+        .join("lib.rs")
+        .to_string_lossy())
+        .to_string();
+    }
+
 }
