@@ -5,6 +5,8 @@ target/
 *.pdb
 exercises/clippy/Cargo.toml
 exercises/clippy/Cargo.lock
+exercises/async/Cargo.toml
+exercises/async/Cargo.lock
 rust-project.json
 .idea
 .vscode/*

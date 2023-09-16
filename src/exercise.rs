@@ -12,6 +12,7 @@ const RUSTC_EDITION_ARGS: &[&str] = &["--edition", "2021"];
 const I_AM_DONE_REGEX: &str = r"(?m)^\s*///?\s*I\s+AM\s+NOT\s+DONE";
 const CONTEXT: usize = 2;
 const CLIPPY_CARGO_TOML_PATH: &str = "./exercises/clippy/Cargo.toml";
+const ASYNC_CARGO_TOML_PATH: &str = "./exercises/async/Cargo.toml";
 
 // Get a temporary file name that is hopefully unique
 #[inline]
@@ -34,6 +35,8 @@ pub enum Mode {
     Test,
     // Indicates that the exercise should be linted with clippy
     Clippy,
+    // Indicates that the exercise should be compiled as a binary with tokio
+    Async,
 }
 
 #[derive(Deserialize)]
@@ -161,6 +164,27 @@ path = "{}.rs""#,
                     .args(&["--", "-D", "warnings", "-D", "clippy::float_cmp"])
                     .output()
             }
+
+            Mode::Async => {
+                let cargo_toml = format!(
+                    r#"[package]
+name = "{}"
+version = "0.0.1"
+edition = "2021"
+[[bin]]
+name = "{}"
+path = "{}.rs"
+
+[dependencies]
+tokio = {{ version = "1.28.1", features = ["full"] }}"#,
+                    self.name, &temp_file()[2..], self.name
+                );
+                fs::write(ASYNC_CARGO_TOML_PATH, cargo_toml).expect("Failed to write async Cargo.toml file.");
+                Command::new("cargo")
+                    .args(&["build", "--manifest-path", ASYNC_CARGO_TOML_PATH])
+                    .args(RUSTC_COLOR_ARGS)
+                    .output()
+            }
         }
         .expect("Failed to run 'compile' command.");
 
@@ -183,7 +207,13 @@ path = "{}.rs""#,
             Mode::Test => "--show-output",
             _ => "",
         };
-        let cmd = Command::new(&temp_file())
+
+        let bin_path = match self.mode {
+            Mode::Async => format!("./exercises/async/target/debug/{}", &temp_file()[2..]),
+            _ => temp_file()
+        };
+
+        let cmd = Command::new(bin_path)
             .arg(arg)
             .output()
             .expect("Failed to run 'run' command");

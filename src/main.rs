@@ -242,6 +242,8 @@ fn main() {
             project
                 .get_sysroot_src()
                 .expect("Couldn't find toolchain path, do you have `rustc` installed?");
+
+            project.get_cargo_tokio_path();
             project
                 .exercises_to_json()
                 .expect("Couldn't parse rustlings exercises files");
